@@ -326,7 +326,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
     await flutterLocalNotificationsPlugin.show(
       id: _notifId,
       title: '¡Hora de la pausa activa!',
-      body: 'Ver los ejercicios!! ᕙ(  •̀ ᗜ •́  )ᕗ.',
+      body: 'Ver los ejercicios!! ᕙ(  •̀ ᗜ •́  )ᕗ',
       notificationDetails: notificationDetails,
     );
   }
@@ -394,7 +394,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Haz clic para ver los ejercicios ᕙ( •̀ ᗜ •́ )ᕗ',
+                        'Ver los ejercicios!! ᕙ(  •̀ ᗜ •́  )ᕗ',
                         style: TextStyle(fontSize: 12, color: Colors.white70),
                       ),
                     ],
@@ -455,7 +455,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 32),
                     onPressed: () {
-                      if (_minutos > 1) setState(() => _minutos -= 1);
+                      if (_minutos > 5) setState(() => _minutos -= 5);
                     },
                   ),
                   const SizedBox(width: 12),
@@ -468,7 +468,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline, size: 32),
                     onPressed: () {
-                      if (_minutos < 120) setState(() => _minutos += 1);
+                      if (_minutos < 120) setState(() => _minutos += 5);
                     },
                   ),
                 ],
