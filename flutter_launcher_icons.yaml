@@ -1,0 +1,8 @@
+flutter_launcher_icons:
+  image_path: "assets/icono.png"
+  macos:
+    generate: true
+    image_path: "assets/icono.png"
+  windows:
+    generate: true
+    image_path: "assets/icono.png"
