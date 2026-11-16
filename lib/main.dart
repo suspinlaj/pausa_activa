@@ -204,6 +204,7 @@ Future<void> _mostrarVentana() async {
       appName: 'Pausa Activa',
       appUserModelId: 'com.susana.pausaactiva',
       guid: '81a24178-8538-4510-9651-824b3113517a',
+      iconPath: 'assets/app_icon.ico',
     );
 
     const InitializationSettings initializationSettings = InitializationSettings(
@@ -258,16 +259,22 @@ Future<void> _mostrarVentana() async {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (!mounted) return;
-      setState(() {
-        if (_segundosRestantes > 1) {
+      if (_segundosRestantes > 1) {
+        setState(() {
           _segundosRestantes--;
-        } else {
-          _timer?.cancel();
+        });
+        await _actualizarMenuBandeja(soloTiempo: true);
+      } else {
+        _timer?.cancel();
+        setState(() {
           _segundosRestantes = 0;
-          _mostrarNotificacion();
-        }
-      });
-      await _actualizarMenuBandeja(soloTiempo: true);
+          _activo = false;
+          _mostrandoEjercicios = true;
+        });
+        await _actualizarMenuBandeja();
+        await _mostrarNotificacion();
+        await _mostrarVentana();
+      }
     });
   }
 
