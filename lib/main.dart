@@ -60,6 +60,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
   int _segundosRestantes = 0;
   bool _activo = false;
   bool _mostrandoEjercicios = false;
+  bool _esModoToast = false;
   int _notifId = 0;
 
   @override
@@ -71,7 +72,6 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
     _inicializarBandeja();
   }
 
-  // Cuando pulses el botón nativo de minimizar (- en Windows o círculo amarillo en Mac)
   @override
   void onWindowMinimize() async {
     if (Platform.isWindows) {
@@ -80,7 +80,6 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
     }
   }
 
-  // Cuando pulses la X (círculo rojo en Mac o X en Windows), se cierra del todo
   @override
   void onWindowClose() async {
     await trayManager.destroy();
@@ -143,7 +142,6 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
     await trayManager.setContextMenu(menu);
   }
 
-  // Eventos al interactuar con el icono de la bandeja / barra superior
   @override
   void onTrayIconMouseDown() async {
     await _actualizarMenuBandeja();
@@ -170,7 +168,15 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
         exit(0);
     }
   }
-Future<void> _mostrarVentana() async {
+
+  Future<void> _mostrarVentana() async {
+    if (_esModoToast) {
+      setState(() => _esModoToast = false);
+      await windowManager.setAlwaysOnTop(false);
+      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+      await windowManager.setSize(const Size(400, 620));
+      await windowManager.center();
+    }
     if (Platform.isWindows) {
       await windowManager.setSkipTaskbar(false);
     }
@@ -182,11 +188,15 @@ Future<void> _mostrarVentana() async {
   }
 
   Future<void> _ocultarEnBandeja() async {
+    setState(() => _esModoToast = false);
+    await windowManager.setAlwaysOnTop(false);
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    await windowManager.setSize(const Size(400, 620));
+
     if (Platform.isWindows) {
       await windowManager.setSkipTaskbar(true);
       await windowManager.hide();
     } else if (Platform.isMacOS) {
-      // En macOS, minimize() mantiene activo el icono de la barra superior
       await windowManager.minimize();
     }
   }
@@ -269,11 +279,13 @@ Future<void> _mostrarVentana() async {
         setState(() {
           _segundosRestantes = 0;
           _activo = false;
-          _mostrandoEjercicios = true;
         });
         await _actualizarMenuBandeja();
-        await _mostrarNotificacion();
-        await _mostrarVentana();
+        if (Platform.isWindows) {
+          await _mostrarAvisoFlotante();
+        } else {
+          await _mostrarNotificacion();
+        }
       }
     });
   }
@@ -319,8 +331,86 @@ Future<void> _mostrarVentana() async {
     );
   }
 
+  Future<void> _mostrarAvisoFlotante() async {
+    await _mostrarNotificacion();
+
+    setState(() {
+      _esModoToast = true;
+    });
+
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    await windowManager.setAlwaysOnTop(true);
+    await windowManager.setSize(const Size(350, 95));
+    await windowManager.setAlignment(Alignment.bottomRight);
+    await windowManager.setSkipTaskbar(true);
+
+    if (await windowManager.isMinimized()) {
+      await windowManager.restore();
+    }
+    await windowManager.show();
+  }
+
+  Future<void> _abrirEjerciciosDesdeToast() async {
+    setState(() {
+      _esModoToast = false;
+      _mostrandoEjercicios = true;
+    });
+    await windowManager.setAlwaysOnTop(false);
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    await windowManager.setSize(const Size(400, 620));
+    await windowManager.setSkipTaskbar(false);
+    await windowManager.center();
+    await windowManager.focus();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_esModoToast) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF252526),
+        body: InkWell(
+          onTap: _abrirEjerciciosDesdeToast,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.5)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Image.asset('assets/icono.png', width: 42, height: 42),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¡Hora de la pausa activa!',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.tealAccent,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Haz clic para ver los ejercicios ᕙ( •̀ ᗜ •́ )ᕗ',
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18, color: Colors.white54),
+                  onPressed: _ocultarEnBandeja,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_mostrandoEjercicios ? 'Ejercicios' : 'Pausa Activa'),
@@ -365,7 +455,7 @@ Future<void> _mostrarVentana() async {
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 32),
                     onPressed: () {
-                      if (_minutos > 5) setState(() => _minutos -= 5);
+                      if (_minutos > 1) setState(() => _minutos -= 1);
                     },
                   ),
                   const SizedBox(width: 12),
@@ -378,7 +468,7 @@ Future<void> _mostrarVentana() async {
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline, size: 32),
                     onPressed: () {
-                      if (_minutos < 120) setState(() => _minutos += 5);
+                      if (_minutos < 120) setState(() => _minutos += 1);
                     },
                   ),
                 ],
@@ -397,8 +487,6 @@ Future<void> _mostrarVentana() async {
                 style: const TextStyle(fontSize: 18, color: Colors.white),
               ),
             ),
-            const SizedBox(height: 20),
-
           ],
         ),
       ),
