@@ -97,7 +97,7 @@ class _TemporizadorScreenState extends State<TemporizadorScreen>
 
   Future<void> _inicializarBandeja() async {
     String iconPath = Platform.isWindows
-        ? 'windows/runner/resources/app_icon.ico'
+        ? 'assets/app_icon.ico'
         : 'assets/tray_icon.png';
 
     await trayManager.setIcon(iconPath);
